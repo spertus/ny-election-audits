@@ -38,7 +38,7 @@ Summarizing the above into an algorithm, the audits proceed as follows:
 test_true_counts <- matrix(rpois(3 * 50, lambda = 100), nrow = 50, ncol = 3)
 #flip votes for candidates 2 and 3
 test_reported_counts <- test_true_counts[,c(1,3,2)]
-test_machine_type <- c(rep("DRE", 25), rep("OS", 25))
+test_machine_types <- c(rep("DRE", 25), rep("OS", 25))
 ```
 
 
@@ -47,16 +47,36 @@ test_machine_type <- c(rep("DRE", 25), rep("OS", 25))
 #input: 
 #true_counts = a matrix with a row for each machine and a column for each candidate. Reflects the true counts that would be revealed by a manual tabulation. These are sampled.
 #reported_counts = a matrix with a row for each machine and a column for each candidate. These are machine counts that contribute to the original reported outcome. These are compared to sampled true_counts.
-#machine_type = a vector coding the type of each machine. Can be numeric or characters. Should be the same length as the number of rows in true_counts and reported_counts
-audit_results <- function(true_counts, reported_counts, machine_type){
-  #check that true counts and reported counts are the same
-  num_machines <- nrow(true_counts)
-  #3% of machines are to be sampled for the initial count
-  initial_sample_size <- ceiling(.03 * num_machines)
-  initial_machines_sampled <- base::sample(1:num_machines, size = initial_sample_size, replace = FALSE)
-  #specifiying drop = FALSE prevents R from turning a single row (if one machine is sampled) into a vector
-  initial_handcount_samples <- true_counts[initial_machines_sampled,, drop = FALSE]
-  initial_reported_samples <- reported_counts[initial_machines_sampled,, drop = FALSE]
+#machine_types = a vector coding the type of each machine. Can be numeric or characters. Should be the same length as the number of rows in true_counts and reported_counts
+audit_results <- function(true_counts, reported_counts, machine_types){
+  unique_machine_types <- unique(machine_types)
+  #containers for totals and discrepancies from sampled machines; there is a row for each machine, each column represents a different candidate
+  #the law stipulates that the audit escalates if any combination of votes would cause a discrepancy of .1% of the original total. The worst case combinations of votes are the sums of all positive votes and all negative votes (such that discrepancies that go different ways don't cancel each other)
+  handcount_samples_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
+  reported_samples_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
+  positive_discrepancies_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
+  negative_discrepancies_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
+  #3% of machines of each type are to be sampled for the initial count
+  #loop samples over machine types:
+  for(i in 1:length(unique_machine_types)){
+    index <- which(machine_types == unique_machine_types[i])
+    initial_sample_size <- ceiling(.03 * length(index))
+    initial_machines_sampled <- base::sample(index, size = initial_sample_size, replace = FALSE)
+    #specifiying drop = FALSE prevents R from turning a single row (if one machine is sampled) into a vector
+    initial_handcount_samples <- true_counts[initial_machines_sampled,, drop = FALSE]
+    initial_reported_samples <- reported_counts[initial_machines_sampled,, drop = FALSE]
+    discrepancies <- initial_handcount_samples - initial_reported_samples
+    
+    #total handcounts within each machine type
+    handcount_samples_type[i,] <- colSums(initial_handcount_samples)
+    reported_samples_type[i,] <- colSums(initial_reported_samples)
+    #pmax takes the maximum of it's left argument (the discrepancies matrix) and it's right argument, effectively rounding negatives up to 0 or vice versa 
+    positive_discrepancies_type[i,] <- colSums(pmax(discrepancies, 0))
+    negative_discrepancies_type[i,] <- colSums(pmin(discrepancies, 0))
+  }
+  
+  positive_discrepancies_type <- colSums(positive_discrepancies)
+  negative_discrepancies_type <- colSums(negative_discrepancies)
   
   #compare total votes from handcounts to total reported votes (summed across machines)
   initial_handcount_totals <- colSums(initial_handcount_samples)
