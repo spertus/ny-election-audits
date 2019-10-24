@@ -1,0 +1,114 @@
+---
+title: "New York Audit Algorithm Analysis"
+author: "Jacob Spertus and Amanda Glazer"
+date: "10/15/2019"
+output: html_notebook
+---
+
+
+```{r setup, include=FALSE}
+library(tidyverse)
+seed <- 1337
+set.seed(seed)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+This notebook analyzes the current law in New York through simulations based on historic election returns at the machine level.
+
+The original law can be found [here](https://govt.westlaw.com/nycrr/Document/I5c54c4e18b2e11dfbe5dec62e7eacc45?viewType=FullText&originationContext=documenttoc&transitionType=CategoryPageItem&contextData=(sc.Default)).
+*Note: part h of the law indicates that county election boards can always proceed to recount at their discretion*
+
+A summary of the law can be found at <http://www.ncsl.org/research/elections-and-campaigns/post-election-audits635926066.aspx>
+
+
+Summarizing the above into an algorithm, the audits proceed as follows:
+
+1. For each county, select uniformly at random no less than 3% of each type of voting machine or system used
+    a) Manually tabulate ballots from the VVPAT from selected machines
+    b) On selected machines, compare manual tabulations to machine tabulations, and report any discrepancies
+         i) If any (>= 1) discrepancies are found on a machine, recount all ballots from that machine.
+    c) If any of the following apply expand the audit (proceed to 2), else end audit:
+         i) any one or more discrepancies between the confirming manual counts and the original machine or system electronic counts, which taken together, would alter the vote share of any candidate, question or proposal by 0.1 percent or more of the hand counted votes for respective contests, questions, or proposals in the entire sample
+         ii) discrepancies of any amount are detected between the confirming manual count and the original machine or system electronic count from at least 10 percent of the machines or systems initially audited then the board or bipartisan team appointed by such board shall manually count the votes recorded on all the voter verifiable paper audit trail records from no less than an additional five percent of each type of the same type of voting machine or system which contains any such discrepancy or discrepancies
+2. Sample 2% of machines uniformly at random and repeat 1b/c, considering the additional 2% sample as well as the original 3% sample (expanded to be 5% of all machines).
+3. If 2 indicates expansion is warranted per 1c, sample 7% of machines uniformly at random (to expand to 12% of all machines) and repeat 1b/c
+4. If 3 indicates expansion is warranted proceed to full hand recount
+
+```{r test data}
+test_true_counts <- matrix(rpois(3 * 50, lambda = 100), nrow = 50, ncol = 3)
+#flip votes for candidates 2 and 3
+test_reported_counts <- test_true_counts[,c(1,3,2)]
+test_machine_type <- c(rep("DRE", 25), rep("OS", 25))
+```
+
+
+```{r audit function}
+#function to implement auditing algorithm given machine level returns from a single contest in a single county. function can only be used if the true counts as would be discovered by a manual tally are known for every machine, i.e. a simulated situation.
+#input: 
+#true_counts = a matrix with a row for each machine and a column for each candidate. Reflects the true counts that would be revealed by a manual tabulation. These are sampled.
+#reported_counts = a matrix with a row for each machine and a column for each candidate. These are machine counts that contribute to the original reported outcome. These are compared to sampled true_counts.
+#machine_type = a vector coding the type of each machine. Can be numeric or characters. Should be the same length as the number of rows in true_counts and reported_counts
+audit_results <- function(true_counts, reported_counts, machine_type){
+  #check that true counts and reported counts are the same
+  num_machines <- nrow(true_counts)
+  #3% of machines are to be sampled for the initial count
+  initial_sample_size <- ceiling(.03 * num_machines)
+  initial_machines_sampled <- base::sample(1:num_machines, size = initial_sample_size, replace = FALSE)
+  #specifiying drop = FALSE prevents R from turning a single row (if one machine is sampled) into a vector
+  initial_handcount_samples <- true_counts[initial_machines_sampled,, drop = FALSE]
+  initial_reported_samples <- reported_counts[initial_machines_sampled,, drop = FALSE]
+  
+  #compare total votes from handcounts to total reported votes (summed across machines)
+  initial_handcount_totals <- colSums(initial_handcount_samples)
+  initial_reported_totals <- colSums(initial_reported_samples)
+  
+  proportion_different <- abs((initial_handcount_totals - initial_reported_totals) / initial_handcount_totals)
+  
+  #escalate audit if discrepancies would shift total vote share by more than .001 for any candidate (question, proposal, etc) 
+  #ignore 1.c.ii for now because we have not specified different types of machines
+  if(any(proportion_different > .001)){
+    second_sample_size <- ceiling(.02 * num_machines)
+    second_remaining_machines <- seq(1:num_machines)[-initial_machines_sampled]
+    second_machines_sampled <- base::sample(second_remaining_machines, size = second_sample_size, replace = FALSE)
+    second_handcount_samples <- true_counts[second_machines_sampled,, drop = FALSE]
+    second_reported_samples <- reported_counts[second_machines_sampled,, drop = FALSE]
+    
+    second_handcount_totals <- colSums(initial_handcount_samples)
+    second_reported_totals <- colSums(initial_reported_samples)
+    
+    #combine the intial sample of 3% of machines with the additional 2% sample
+    combined_handcount_totals <- initial_handcount_totals + second_handcount_totals
+    combined_reported_totals <- initial_reported_totals + second_reported_totals
+    
+    second_proportion_different <- abs((combined_handcount_totals - combined_reported_totals) / combined_handcount_totals)
+    
+    if(any(second_proportion_different > .001)){
+      third_sample_size <- ceiling(.07 * num_machines)
+      third_remaining_machines <- seq(1:num_machines)[-c(initial_machines_sampled, second_machines_sampled)]
+      third_machines_sampled <- base::sample(third_remaining_machines, size = third_sample_size, replace = FALSE)
+      third_handcount_samples <- true_counts[third_machines_sampled,, drop = FALSE]
+      third_reported_samples <- true_counts[third_machines_sampled,, drop = FALSE]
+      
+      third_handcount_totals <- colSums(third_handcount_samples)
+      third_reported_totals <- colSums(third_reported_samples)
+      
+      final_combined_handcount_totals <- initial_handcount_totals + second_handcount_totals + third_handcount_totals
+      final_combined_reported_totals <- initial_reported_totals + second_reported_totals + third_reported_totals
+      
+      third_proportion_different <- abs((final_combined_handcount_totals - final_combined_reported_totals) / final_combined_handcount_totals)
+      if(any(third_proportion_different) > .001){
+        return("Proceed to full hand count")
+      } else {
+        return("Audit done; results confirmed")
+      }
+    } else {
+      return("Audit done; results confirmed")
+    }
+    
+  } else {
+    return("Audit done; results confirmed")
+  }
+}
+```
+
+
