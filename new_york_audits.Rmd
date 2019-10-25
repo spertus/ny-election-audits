@@ -60,63 +60,110 @@ audit_results <- function(true_counts, reported_counts, machine_types){
   #loop samples over machine types:
   for(i in 1:length(unique_machine_types)){
     index <- which(machine_types == unique_machine_types[i])
-    initial_sample_size <- ceiling(.03 * length(index))
-    initial_machines_sampled <- base::sample(index, size = initial_sample_size, replace = FALSE)
+    sample_size <- ceiling(.03 * length(index))
+    machines_sampled <- base::sample(index, size = sample_size, replace = FALSE)
     #specifiying drop = FALSE prevents R from turning a single row (if one machine is sampled) into a vector
-    initial_handcount_samples <- true_counts[initial_machines_sampled,, drop = FALSE]
-    initial_reported_samples <- reported_counts[initial_machines_sampled,, drop = FALSE]
-    discrepancies <- initial_handcount_samples - initial_reported_samples
+    handcount_samples <- true_counts[machines_sampled,, drop = FALSE]
+    reported_samples <- reported_counts[machines_sampled,, drop = FALSE]
+    discrepancies <- handcount_samples - reported_samples
     
     #total handcounts within each machine type
-    handcount_samples_type[i,] <- colSums(initial_handcount_samples)
-    reported_samples_type[i,] <- colSums(initial_reported_samples)
+    handcount_samples_type[i,] <- colSums(handcount_samples)
+    reported_samples_type[i,] <- colSums(reported_samples)
     #pmax takes the maximum of it's left argument (the discrepancies matrix) and it's right argument, effectively rounding negatives up to 0 or vice versa 
     positive_discrepancies_type[i,] <- colSums(pmax(discrepancies, 0))
     negative_discrepancies_type[i,] <- colSums(pmin(discrepancies, 0))
   }
   
-  positive_discrepancies_type <- colSums(positive_discrepancies)
-  negative_discrepancies_type <- colSums(negative_discrepancies)
+  initial_positive_discrepancies <- colSums(positive_discrepancies_type)
+  initial_negative_discrepancies <- colSums(negative_discrepancies_type)
   
   #compare total votes from handcounts to total reported votes (summed across machines)
-  initial_handcount_totals <- colSums(initial_handcount_samples)
-  initial_reported_totals <- colSums(initial_reported_samples)
+  initial_handcount_totals <- colSums(handcount_samples_type)
+  initial_reported_totals <- colSums(reported_samples_type)
   
-  proportion_different <- abs((initial_handcount_totals - initial_reported_totals) / initial_handcount_totals)
+  proportion_different_positive <- abs((initial_positive_discrepancies) / initial_handcount_totals)
+  proportion_different_negative <- abs((initial_negative_discrepancies) / initial_handcount_totals)
   
   #escalate audit if discrepancies would shift total vote share by more than .001 for any candidate (question, proposal, etc) 
   #ignore 1.c.ii for now because we have not specified different types of machines
-  if(any(proportion_different > .001)){
-    second_sample_size <- ceiling(.02 * num_machines)
-    second_remaining_machines <- seq(1:num_machines)[-initial_machines_sampled]
-    second_machines_sampled <- base::sample(second_remaining_machines, size = second_sample_size, replace = FALSE)
-    second_handcount_samples <- true_counts[second_machines_sampled,, drop = FALSE]
-    second_reported_samples <- reported_counts[second_machines_sampled,, drop = FALSE]
+  if(any(c(proportion_different_negative, proportion_different_positive) > .001)){
+    handcount_samples_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
+    reported_samples_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
+    positive_discrepancies_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
+    negative_discrepancies_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
+    for(i in 1:length(unique_machine_types)){
+      index <- which(machine_types == unique_machine_types[i])
+      sample_size <- ceiling(.02 * length(index))
+      machines_sampled <- base::sample(index, size = sample_size, replace = FALSE)
+      #specifiying drop = FALSE prevents R from turning a single row (if one machine is sampled) into a vector
+      handcount_samples <- true_counts[machines_sampled,, drop = FALSE]
+      reported_samples <- reported_counts[machines_sampled,, drop = FALSE]
+      discrepancies <- handcount_samples - reported_samples
     
-    second_handcount_totals <- colSums(initial_handcount_samples)
-    second_reported_totals <- colSums(initial_reported_samples)
+      #total handcounts within each machine type
+      handcount_samples_type[i,] <- colSums(handcount_samples)
+      reported_samples_type[i,] <- colSums(reported_samples)
+      #pmax takes the maximum of it's left argument (the discrepancies matrix) and it's right argument, effectively rounding negatives up to 0 or vice versa 
+      positive_discrepancies_type[i,] <- colSums(pmax(discrepancies, 0))
+      negative_discrepancies_type[i,] <- colSums(pmin(discrepancies, 0))
+  }
+    second_positive_discrepancies <- colSums(positive_discrepancies_type)
+    second_negative_discrepancies <- colSums(negative_discrepancies_type)
+  
+    #compare total votes from handcounts to total reported votes (summed across machines)
+    second_handcount_totals <- colSums(handcount_samples_type)
+    second_reported_totals <- colSums(reported_samples_type)
     
     #combine the intial sample of 3% of machines with the additional 2% sample
     combined_handcount_totals <- initial_handcount_totals + second_handcount_totals
     combined_reported_totals <- initial_reported_totals + second_reported_totals
     
-    second_proportion_different <- abs((combined_handcount_totals - combined_reported_totals) / combined_handcount_totals)
+    combined_positive_discrepancies <- initial_positive_discrepancies + second_positive_discrepancies
+    combined_negative_discrepancies <- initial_negative_discrepancies + second_negative_discrepancies
     
-    if(any(second_proportion_different > .001)){
-      third_sample_size <- ceiling(.07 * num_machines)
-      third_remaining_machines <- seq(1:num_machines)[-c(initial_machines_sampled, second_machines_sampled)]
-      third_machines_sampled <- base::sample(third_remaining_machines, size = third_sample_size, replace = FALSE)
-      third_handcount_samples <- true_counts[third_machines_sampled,, drop = FALSE]
-      third_reported_samples <- true_counts[third_machines_sampled,, drop = FALSE]
+    proportion_different_positive <- abs((combined_positive_discrepancies) / combined_handcount_totals)
+    proportion_different_negative <- abs((combined_negative_discrepancies) / combined_handcount_totals)
+    
+    if(any(c(proportion_different_positive, proportion_different_negative) > .001)){
+      handcount_samples_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
+      reported_samples_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
+      positive_discrepancies_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
+      negative_discrepancies_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
+      for(i in 1:length(unique_machine_types)){
+        index <- which(machine_types == unique_machine_types[i])
+        sample_size <- ceiling(.07 * length(index))
+        machines_sampled <- base::sample(index, size = sample_size, replace = FALSE)
+        #specifiying drop = FALSE prevents R from turning a single row (if one machine is sampled) into a vector
+        handcount_samples <- true_counts[machines_sampled,, drop = FALSE]
+        reported_samples <- reported_counts[machines_sampled,, drop = FALSE]
+        discrepancies <- handcount_samples - reported_samples
       
-      third_handcount_totals <- colSums(third_handcount_samples)
-      third_reported_totals <- colSums(third_reported_samples)
+        #total handcounts within each machine type
+        handcount_samples_type[i,] <- colSums(handcount_samples)
+        reported_samples_type[i,] <- colSums(reported_samples)
+        #pmax takes the maximum of it's left argument (the discrepancies matrix) and it's right argument, effectively rounding negatives up to 0 or vice versa 
+        positive_discrepancies_type[i,] <- colSums(pmax(discrepancies, 0))
+        negative_discrepancies_type[i,] <- colSums(pmin(discrepancies, 0))
+    }
+      third_positive_discrepancies <- colSums(positive_discrepancies_type)
+      third_negative_discrepancies <- colSums(negative_discrepancies_type)
+    
+      #compare total votes from handcounts to total reported votes (summed across machines)
+      third_handcount_totals <- colSums(handcount_samples_type)
+      third_reported_totals <- colSums(reported_samples_type)
       
-      final_combined_handcount_totals <- initial_handcount_totals + second_handcount_totals + third_handcount_totals
-      final_combined_reported_totals <- initial_reported_totals + second_reported_totals + third_reported_totals
+      #combine the intial sample of 3% of machines with the additional 2% sample
+      combined_handcount_totals <- initial_handcount_totals + second_handcount_totals + third_handcount_totals
+      combined_reported_totals <- initial_reported_totals + second_reported_totals + third_reported_totals
       
-      third_proportion_different <- abs((final_combined_handcount_totals - final_combined_reported_totals) / final_combined_handcount_totals)
-      if(any(third_proportion_different) > .001){
+      combined_positive_discrepancies <- initial_positive_discrepancies + second_positive_discrepancies + third_positive_discrepancies
+      combined_negative_discrepancies <- initial_negative_discrepancies + second_negative_discrepancies + third_negative_discrepancies
+      
+      proportion_different_positive <- abs((combined_positive_discrepancies) / combined_handcount_totals)
+      proportion_different_negative <- abs((combined_negative_discrepancies) / combined_handcount_totals)
+      
+      if(any(c(proportion_different_positive, proportion_different_negative)) > .001){
         return("Proceed to full hand count")
       } else {
         return("Audit done; results confirmed")
@@ -131,4 +178,6 @@ audit_results <- function(true_counts, reported_counts, machine_types){
 }
 ```
 
+```{r run test}
 
+```
