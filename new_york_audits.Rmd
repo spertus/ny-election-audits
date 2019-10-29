@@ -34,13 +34,6 @@ Summarizing the above into an algorithm, the audits proceed as follows:
 3. If 2 indicates expansion is warranted per 1c, sample 7% of machines uniformly at random (to expand to 12% of all machines) and repeat 1b/c
 4. If 3 indicates expansion is warranted proceed to full hand recount
 
-```{r test data}
-test_true_counts <- matrix(rpois(3 * 50, lambda = 100), nrow = 50, ncol = 3)
-#flip votes for candidates 2 and 3
-test_reported_counts <- test_true_counts[,c(1,3,2)]
-test_machine_types <- c(rep("DRE", 25), rep("OS", 25))
-```
-
 
 ```{r audit function}
 #function to implement auditing algorithm given machine level returns from a single contest in a single county. function can only be used if the true counts as would be discovered by a manual tally are known for every machine, i.e. a simulated situation.
@@ -178,6 +171,21 @@ audit_results <- function(true_counts, reported_counts, machine_types){
 }
 ```
 
-```{r run test}
+```{r test function}
+test_true_counts <- matrix(c(1000,1500), nrow = 50, ncol = 2, byrow = TRUE)
+#give one % of votes for candidate 1 to candidate 2
+#spread exactly evenly across machines
+#should lead to a full hand count every time
+difference <- ceiling(.01 * test_true_counts[,1])
+discrepancy_matrix <- matrix(c(-difference, difference), nrow = nrow(test_true_counts), ncol = ncol(test_true_counts))
+test_reported_counts <- test_true_counts + discrepancy_matrix
+test_machine_types <- c(rep("DRE", 25), rep("OS", 25))
 
+#the above should lead to a full hand count
+result_wrong <- audit_results(true_counts = test_true_counts, reported_counts = test_reported_counts, machine_types = test_machine_types)
+
+#the below should be confirmed as true and reported counts are exactly the same
+result_right <- audit_results(true_counts = test_true_counts, reported_counts = test_true_counts, machine_types = test_machine_types)
+
+ifelse(result_wrong == "Proceed to full hand count" & result_right == "Audit done; results confirmed", "Works for both correct and discrepant elections", "Something is wrong.")
 ```
