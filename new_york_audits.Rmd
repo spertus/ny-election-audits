@@ -20,6 +20,7 @@ The original law can be found [here](https://govt.westlaw.com/nycrr/Document/I5c
 
 A summary of the law can be found at <http://www.ncsl.org/research/elections-and-campaigns/post-election-audits635926066.aspx>
 
+# NY's auditing algorithm
 
 Summarizing the above into an algorithm, the audits proceed as follows:
 
@@ -30,10 +31,15 @@ Summarizing the above into an algorithm, the audits proceed as follows:
     c) If any of the following apply expand the audit (proceed to 2), else end audit:
          i) any one or more discrepancies between the confirming manual counts and the original machine or system electronic counts, which taken together, would alter the vote share of any candidate, question or proposal by 0.1 percent or more of the hand counted votes for respective contests, questions, or proposals in the entire sample
          ii) discrepancies of any amount are detected between the confirming manual count and the original machine or system electronic count from at least 10 percent of the machines or systems initially audited then the board or bipartisan team appointed by such board shall manually count the votes recorded on all the voter verifiable paper audit trail records from no less than an additional five percent of each type of the same type of voting machine or system which contains any such discrepancy or discrepancies
-2. Sample 2% of machines uniformly at random and repeat 1b/c, considering the additional 2% sample as well as the original 3% sample (expanded to be 5% of all machines).
-3. If 2 indicates expansion is warranted per 1c, sample 7% of machines uniformly at random (to expand to 12% of all machines) and repeat 1b/c
+2. Sample 5% of machines uniformly at random and repeat 1b/c, considering the additional 5% sample as well as the original 3% sample (expanded to be 8% of all machines).
+3. If 2 indicates expansion is warranted per 1c, sample 12% of machines uniformly at random (to expand to 20% of all machines) and repeat 1b/c
 4. If 3 indicates expansion is warranted proceed to full hand recount
 
+
+# A brief critique of the algorithm
+
+
+# The audit as a function
 
 ```{r audit function}
 #function to implement auditing algorithm given machine level returns from a single contest in a single county. function can only be used if the true counts as would be discovered by a manual tally are known for every machine, i.e. a simulated situation.
@@ -87,7 +93,7 @@ audit_results <- function(true_counts, reported_counts, machine_types){
     negative_discrepancies_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
     for(i in 1:length(unique_machine_types)){
       index <- which(machine_types == unique_machine_types[i])
-      sample_size <- ceiling(.02 * length(index))
+      sample_size <- ceiling(.05 * length(index))
       machines_sampled <- base::sample(index, size = sample_size, replace = FALSE)
       #specifiying drop = FALSE prevents R from turning a single row (if one machine is sampled) into a vector
       handcount_samples <- true_counts[machines_sampled,, drop = FALSE]
@@ -125,7 +131,7 @@ audit_results <- function(true_counts, reported_counts, machine_types){
       negative_discrepancies_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
       for(i in 1:length(unique_machine_types)){
         index <- which(machine_types == unique_machine_types[i])
-        sample_size <- ceiling(.07 * length(index))
+        sample_size <- ceiling(.12 * length(index))
         machines_sampled <- base::sample(index, size = sample_size, replace = FALSE)
         #specifiying drop = FALSE prevents R from turning a single row (if one machine is sampled) into a vector
         handcount_samples <- true_counts[machines_sampled,, drop = FALSE]
@@ -189,3 +195,6 @@ result_right <- audit_results(true_counts = test_true_counts, reported_counts = 
 
 ifelse(result_wrong == "Proceed to full hand count" & result_right == "Audit done; results confirmed", "Works for both correct and discrepant elections", "Something is wrong.")
 ```
+
+
+# Simulations 
