@@ -51,17 +51,27 @@ There are scenarios where this audit procedure could lead to a correctly reporte
 
 ```{r audit function}
 # function to sample more machines
-sample_machines <- function(true_counts, reported_counts, machine_types, escalation_prop){
+
+sample_machines <- function(true_counts, reported_counts, machine_types, escalation_prop, ignore = NULL){
+
     unique_machine_types <- unique(machine_types)
     handcount_samples_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
     reported_samples_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
     positive_discrepancies_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
     negative_discrepancies_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
     prop_machine_discrepancy <- rep(0, length(unique_machine_types))
+
+    #save and return sample index to avoid duplicating samples
+    index_memory <- c()
     for(i in 1:length(unique_machine_types)){
       index <- which(machine_types == unique_machine_types[i])
+      if(!is.null(ignore)){
+        index <- index[-which(index == ignore)]
+      }
+
       sample_size <- ceiling(escalation_prop * length(index))
       machines_sampled <- base::sample(index, size = sample_size, replace = FALSE)
+      index_memory <- c(index_memory, machines_sampled)
       #specifiying drop = FALSE prevents R from turning a single row (if one machine is sampled) into a vector
       handcount_samples <- true_counts[machines_sampled,, drop = FALSE]
       reported_samples <- reported_counts[machines_sampled,, drop = FALSE]
@@ -77,11 +87,13 @@ sample_machines <- function(true_counts, reported_counts, machine_types, escalat
       positive_discrepancies_type[i,] <- colSums(pmax(discrepancies, 0))
       negative_discrepancies_type[i,] <- colSums(pmin(discrepancies, 0))
     }
-    return(list(handcount_samples_type = handcount_samples_type, 
-                reported_samples_type = reported_samples_type,
-                positive_discrepancies_type = positive_discrepancies_type, 
-                negative_discrepancies_type = negative_discrepancies_type,
-                prop_machine_discrepancy = prop_machine_discrepancy))
+
+    list(handcount_samples_type = handcount_samples_type, 
+        reported_samples_type = reported_samples_type,
+        positive_discrepancies_type = positive_discrepancies_type, 
+        negative_discrepancies_type = negative_discrepancies_type,
+        prop_machine_discrepancy = prop_machine_discrepancy, 
+        sampled_machines = index_memory)
 }
 
 #function to implement auditing algorithm given machine level returns from a single contest in a single county. function can only be used if the true counts as would be discovered by a manual tally are known for every machine, i.e. a simulated situation.
@@ -95,10 +107,12 @@ audit_results <- function(true_counts, reported_counts, machine_types){
   #the law stipulates that the audit escalates if any combination of votes would cause a discrepancy of .1% of the original total. The worst case combinations of votes are the sums of all positive votes and all negative votes (such that discrepancies that go different ways don't cancel each other)
   # Sample 3% of machines
   initial_sample <- sample_machines(true_counts, reported_counts, machine_types, 0.03)
-  
+
+  initial_sample_index <- initial_sample$sampled_machines
+    
   initial_positive_discrepancies <- colSums(initial_sample$positive_discrepancies_type)
   initial_negative_discrepancies <- colSums(initial_sample$negative_discrepancies_type)
-  
+
   #compare total votes from handcounts to total reported votes (summed across machines)
   initial_handcount_totals <- colSums(initial_sample$handcount_samples_type)
   initial_reported_totals <- colSums(initial_sample$reported_samples_type)
@@ -108,7 +122,10 @@ audit_results <- function(true_counts, reported_counts, machine_types){
   
   #escalate audit if discrepancies would shift total vote share by more than .001 for any candidate (question, proposal, etc) or 10% of machines have a discrepancy
   if(any(c(proportion_different_negative, proportion_different_positive) > .001) | max(initial_sample$prop_machine_discrepancy) > 0.10){
-    second_sample <- sample_machines(true_counts, reported_counts, machine_types, 0.05)
+    second_sample <- sample_machines(true_counts, reported_counts, machine_types, 0.05, ignore = initial_sample_index)
+    
+    second_sample_index <- second_sample$sampled_machines
+ 
     second_positive_discrepancies <- colSums(second_sample$positive_discrepancies_type)
     second_negative_discrepancies <- colSums(second_sample$negative_discrepancies_type)
   
@@ -127,7 +144,9 @@ audit_results <- function(true_counts, reported_counts, machine_types){
     proportion_different_negative <- abs((combined_negative_discrepancies) / combined_handcount_totals)
     
     if(any(c(proportion_different_positive, proportion_different_negative) > .001) | max(second_sample$prop_machine_discrepancy) > 0.10){
-      third_sample <- sample_machines(true_counts, reported_counts, machine_types, 0.12)
+
+      third_sample <- sample_machines(true_counts, reported_counts, machine_types, 0.12, ignore = c(initial_sample_index, second_sample_index))
+
       third_positive_discrepancies <- colSums(third_sample$positive_discrepancies_type)
       third_negative_discrepancies <- colSums(third_sample$negative_discrepancies_type)
     
