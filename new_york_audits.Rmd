@@ -41,9 +41,9 @@ Summarizing the above into an algorithm, the audits proceed as follows:
 
 # A brief critique of the algorithm
 
-In the worst case scenario, if discrepancies in a county are concentrated on one machine within one system, then this auditing procedure has only a 3\% chance of catching the discrepancy. The more machines that have a discrepancy between true and reported outcomes, the more likely it is that this audit catches the discrepancy. However, if discrepancies are concentrated around a few machines, it is very unlikely that this auditing procedure will catch them. 
+In the worst case scenario, if discrepancies in a county are concentrated on one machine within one system, then this auditing procedure has only a 3\% chance of catching the discrepancy. The more machines that have a discrepancy between true and reported outcomes, the more likely it is that this audit catches the discrepancy. However, if discrepancies are concentrated around a few machines then it is very unlikely that this audit will catch them. 
 
-The auditing procedure gives no upper bound on the probability that a wrong outcome will be corrected (unlike a risk limiting audit which does). Since the audit rules are public knowledge, an intelligent hacker could change the results of an election by concentrating discrepancies on as few machines as possible, leading to a very small probability of detection under this audit procedure. 
+The auditing procedure gives no lower bound on the probability that a wrong outcome will be corrected (unlike a risk limiting audit which does). Since the audit rules are public knowledge, an intelligent hacker could change the results of an election by concentrating discrepancies on as few machines as possible, leading to a very small probability of detection under this audit procedure. 
 
 There are scenarios where this audit procedure could lead to a correctly reported outcome being overturned for an incorrect outcome. Consider the toy example with 3 counties where Amanda is reported to win the election with 47 votes and Jake is reported to lose the election with 35 votes. The true vote tally still reveals Amanda as the winner but she really only received 45 votes and Jake received 42 votes. In county A, the reported (true) votes are 10 (10) for Amanda and 5 (5) for Jake. In county B, the reported (true) votes are 5 (10) for Amanda and 10 (5) for Jake. In county C, the reported (true) votes are 32 (25) for Amanda and 25 (32) for Jake. In county A the votes were tallied correctly, but they were not in counties B and C. If the audit corrects the discrepancy in county C but not in county B, this would lead to the "corrected" tally of 40 votes for Amanda and 47 votes for Jake. The audit now declares Jake the winner, however this is incorrect. The audit has rendered a correct outcome wrong.
 
@@ -51,16 +51,13 @@ There are scenarios where this audit procedure could lead to a correctly reporte
 
 ```{r audit function}
 # function to sample more machines
-
 sample_machines <- function(true_counts, reported_counts, machine_types, escalation_prop, ignore = NULL){
-
     unique_machine_types <- unique(machine_types)
     handcount_samples_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
     reported_samples_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
     positive_discrepancies_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
     negative_discrepancies_type <- matrix(0, nrow = length(unique_machine_types), ncol = ncol(true_counts))
     prop_machine_discrepancy <- rep(0, length(unique_machine_types))
-
     #save and return sample index to avoid duplicating samples
     index_memory <- c()
     for(i in 1:length(unique_machine_types)){
@@ -68,7 +65,6 @@ sample_machines <- function(true_counts, reported_counts, machine_types, escalat
       if(!is.null(ignore)){
         index <- index[-which(index == ignore)]
       }
-
       sample_size <- ceiling(escalation_prop * length(index))
       machines_sampled <- base::sample(index, size = sample_size, replace = FALSE)
       index_memory <- c(index_memory, machines_sampled)
@@ -87,7 +83,6 @@ sample_machines <- function(true_counts, reported_counts, machine_types, escalat
       positive_discrepancies_type[i,] <- colSums(pmax(discrepancies, 0))
       negative_discrepancies_type[i,] <- colSums(pmin(discrepancies, 0))
     }
-
     list(handcount_samples_type = handcount_samples_type, 
         reported_samples_type = reported_samples_type,
         positive_discrepancies_type = positive_discrepancies_type, 
@@ -113,6 +108,7 @@ audit_results <- function(true_counts, reported_counts, machine_types){
   initial_positive_discrepancies <- colSums(initial_sample$positive_discrepancies_type)
   initial_negative_discrepancies <- colSums(initial_sample$negative_discrepancies_type)
 
+  
   #compare total votes from handcounts to total reported votes (summed across machines)
   initial_handcount_totals <- colSums(initial_sample$handcount_samples_type)
   initial_reported_totals <- colSums(initial_sample$reported_samples_type)
@@ -121,11 +117,11 @@ audit_results <- function(true_counts, reported_counts, machine_types){
   proportion_different_negative <- abs((initial_negative_discrepancies) / initial_handcount_totals)
   
   #escalate audit if discrepancies would shift total vote share by more than .001 for any candidate (question, proposal, etc) or 10% of machines have a discrepancy
-  if(any(c(proportion_different_negative, proportion_different_positive) > .001) | max(initial_sample$prop_machine_discrepancy) > 0.10){
+  if(max(c(proportion_different_negative, proportion_different_positive)) > .001 | max(initial_sample$prop_machine_discrepancy) > 0.10){
     second_sample <- sample_machines(true_counts, reported_counts, machine_types, 0.05, ignore = initial_sample_index)
     
     second_sample_index <- second_sample$sampled_machines
- 
+    
     second_positive_discrepancies <- colSums(second_sample$positive_discrepancies_type)
     second_negative_discrepancies <- colSums(second_sample$negative_discrepancies_type)
   
@@ -143,10 +139,8 @@ audit_results <- function(true_counts, reported_counts, machine_types){
     proportion_different_positive <- abs((combined_positive_discrepancies) / combined_handcount_totals)
     proportion_different_negative <- abs((combined_negative_discrepancies) / combined_handcount_totals)
     
-    if(any(c(proportion_different_positive, proportion_different_negative) > .001) | max(second_sample$prop_machine_discrepancy) > 0.10){
-
+    if(max(c(proportion_different_positive, proportion_different_negative)) > .001 | max(second_sample$prop_machine_discrepancy) > 0.10){
       third_sample <- sample_machines(true_counts, reported_counts, machine_types, 0.12, ignore = c(initial_sample_index, second_sample_index))
-
       third_positive_discrepancies <- colSums(third_sample$positive_discrepancies_type)
       third_negative_discrepancies <- colSums(third_sample$negative_discrepancies_type)
     
@@ -164,7 +158,7 @@ audit_results <- function(true_counts, reported_counts, machine_types){
       proportion_different_positive <- abs((combined_positive_discrepancies) / combined_handcount_totals)
       proportion_different_negative <- abs((combined_negative_discrepancies) / combined_handcount_totals)
       
-      if(any(c(proportion_different_positive, proportion_different_negative)) > .001 | max(third_sample$prop_machine_discrepancy) > 0.10){
+      if(max(c(proportion_different_positive, proportion_different_negative)) > .001 | max(third_sample$prop_machine_discrepancy) > 0.10){
         return("Proceed to full hand count")
       } else {
         return("Audit done; results confirmed")
@@ -178,6 +172,8 @@ audit_results <- function(true_counts, reported_counts, machine_types){
   }
 }
 ```
+
+First we run a very simple unit test of the function by feeding it an election that should definitely be confirmed (the reported and true results are exactly the same), and one that should definitely be flagged as wrong (there are 1% discrepancies on every machine).
 
 ```{r test function}
 test_true_counts <- matrix(c(1000,1500), nrow = 50, ncol = 2, byrow = TRUE)
@@ -201,7 +197,8 @@ ifelse(result_wrong == "Proceed to full hand count" & result_right == "Audit don
 
 # Simulations 
 
-For our simulations we consider NY precinct level data from the 2016 presidential election. Since we are not able to acquire machine level data, we will sample precincts instead of machines. 
+For our simulations we consider NY precinct level data from the 2016 presidential election. Since we are not able to acquire machine level data, we will work at the precinct level instead, sampling precincts instead of machines and conducting the audits as though precincts are machines. 
+
 ```{r load data}
 # Load NY 2016 Presidential Election Data
 data <- read.csv("ny_precinct_2016_presidential.csv")
@@ -213,6 +210,7 @@ data <- data %>%
 data <- data %>% 
   group_by(county_fips, precinct, candidate) %>%
   summarise(votes = sum(votes))
+
 # Look at number of precincts and votes tallies by county
 county_tally <- data %>% 
   group_by(county_fips, candidate) %>% 
@@ -228,9 +226,9 @@ true_counts <- as.matrix(county_36027[, 3:4])
 # Reported counts are true counts with the first precinct information flipped
 reported_counts <- true_counts
 reported_counts[1, 1] <- true_counts[1, 2]
-reported_counts[1, 2] = true_counts[1, 1]
+reported_counts[1, 2] <- true_counts[1, 1]
 # Audit results 1000 times and count the number of times it incorrectly confirms the results
-error = 0
+error <- 0
 for(i in 1:1000){
   audit <- audit_results(true_counts = true_counts, reported_counts = reported_counts, machine_types = rep(1, nrow(true_counts)))
   if(audit == "Audit done; results confirmed"){
@@ -250,8 +248,8 @@ true_counts <- as.matrix(county_36027[, 3:4])
 # Reported counts are true counts with the first 15 machines giving 5% of hillary's votes to trump
 reported_counts <- true_counts
 for(i in 1:15){
-  reported_counts[i, 1] <- true_counts[i, 1] + ceiling(0.05*true_counts[i, 2])
-  reported_counts[i, 2] <- true_counts[i, 2] - ceiling(0.05*true_counts[i, 2])
+  reported_counts[i, 1] <- true_counts[i, 1] + ceiling(0.05 * true_counts[i, 2])
+  reported_counts[i, 2] <- true_counts[i, 2] - ceiling(0.05 * true_counts[i, 2])
 }
 # Check that reported counts now declare Trump winner
 colSums(reported_counts)
