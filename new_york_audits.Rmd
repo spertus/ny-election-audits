@@ -267,3 +267,8 @@ for(i in 1:1000){
 error/1000
 ```
 
+```{r version info}
+R.Version()
+```
+
+
