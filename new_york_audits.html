@@ -11,7 +11,6 @@
 
 <meta name="author" content="Jacob Spertus and Amanda Glazer" />
 
-<meta name="date" content="2019-10-15" />
 
 <title>New York Audit Algorithm Analysis</title>
 
@@ -1648,7 +1647,7 @@ $(document).ready(function () {
 
 <h1 class="title toc-ignore">New York Audit Algorithm Analysis</h1>
 <h4 class="author">Jacob Spertus and Amanda Glazer</h4>
-<h4 class="date">10/15/2019</h4>
+<h4 class="date">Initialized: 10/15/2019; Updated: 11/6/2019</h4>
 
 </div>
 
@@ -1809,6 +1808,9 @@ audit_results &lt;- function(true_counts, reported_counts, machine_types){
     return(&quot;Audit done; results confirmed&quot;)
   }
 }</code></pre>
+</div>
+<div id="unit-test" class="section level1">
+<h1>Unit Test</h1>
 <p>First we run a very simple unit test of the function by feeding it an election that should definitely be confirmed (the reported and true results are exactly the same), and one that should definitely be flagged as wrong (there are 1% discrepancies on every machine).</p>
 <pre class="r"><code>test_true_counts &lt;- matrix(c(1000,1500), nrow = 50, ncol = 2, byrow = TRUE)
 #give one % of votes for candidate 1 to candidate 2
@@ -1830,7 +1832,7 @@ ifelse(result_wrong == &quot;Proceed to full hand count&quot; &amp; result_right
 </div>
 <div id="simulations" class="section level1">
 <h1>Simulations</h1>
-<p>For our simulations we consider NY precinct level data from the 2016 presidential election. Since we are not able to acquire machine level data, we will work at the precinct level instead, sampling precincts instead of machines and conducting the audits as though precincts are machines.</p>
+<p>For our simulations we consider NY precinct level data from the 2016 presidential election. For simplicity we make the election into a two contestant election by only considering Hillary Clinton and Donald Trump as candidates. Since we are not able to acquire machine level data, we will work at the precinct level instead, sampling precincts instead of machines and conducting the audits as though precincts are machines.</p>
 <pre class="r"><code># Load NY 2016 Presidential Election Data
 data &lt;- read.csv(&quot;ny_precinct_2016_presidential.csv&quot;)
 # Filter data to only look at Clinton and Trump
@@ -1852,7 +1854,7 @@ county_tally</code></pre>
 {"columns":[{"label":["county_fips"],"name":[1],"type":["int"],"align":["right"]},{"label":["candidate"],"name":[2],"type":["fctr"],"align":["left"]},{"label":["num_votes"],"name":[3],"type":["int"],"align":["right"]},{"label":["num_precincts"],"name":[4],"type":["int"],"align":["right"]}],"data":[{"1":"36001","2":"Donald Trump","3":"47808","4":"317"},{"1":"36001","2":"Hillary Clinton","3":"83071","4":"317"},{"1":"36003","2":"Donald Trump","3":"12525","4":"37"},{"1":"36003","2":"Hillary Clinton","3":"4882","4":"37"},{"1":"36005","2":"Donald Trump","3":"37797","4":"937"},{"1":"36005","2":"Hillary Clinton","3":"353646","4":"937"},{"1":"36007","2":"Donald Trump","3":"40943","4":"141"},{"1":"36007","2":"Hillary Clinton","3":"39212","4":"141"},{"1":"36009","2":"Donald Trump","3":"19692","4":"55"},{"1":"36009","2":"Hillary Clinton","3":"9497","4":"55"},{"1":"36011","2":"Donald Trump","3":"17384","4":"46"},{"1":"36011","2":"Hillary Clinton","3":"13522","4":"46"},{"1":"36013","2":"Donald Trump","3":"31594","4":"103"},{"1":"36013","2":"Hillary Clinton","3":"19091","4":"103"},{"1":"36015","2":"Donald Trump","3":"20097","4":"88"},{"1":"36015","2":"Hillary Clinton","3":"13757","4":"88"},{"1":"36017","2":"Donald Trump","3":"11921","4":"31"},{"1":"36017","2":"Hillary Clinton","3":"6775","4":"31"},{"1":"36019","2":"Donald Trump","3":"14449","4":"54"},{"1":"36019","2":"Hillary Clinton","3":"15059","4":"54"},{"1":"36021","2":"Donald Trump","3":"13756","4":"51"},{"1":"36021","2":"Hillary Clinton","3":"15284","4":"51"},{"1":"36023","2":"Donald Trump","3":"9900","4":"51"},{"1":"36023","2":"Hillary Clinton","3":"8771","4":"51"},{"1":"36025","2":"Donald Trump","3":"11942","4":"55"},{"1":"36025","2":"Hillary Clinton","3":"6627","4":"55"},{"1":"36027","2":"Donald Trump","3":"61810","4":"221"},{"1":"36027","2":"Hillary Clinton","3":"62284","4":"221"},{"1":"36029","2":"Donald Trump","3":"188303","4":"837"},{"1":"36029","2":"Hillary Clinton","3":"215456","4":"837"},{"1":"36031","2":"Donald Trump","3":"7958","4":"42"},{"1":"36031","2":"Hillary Clinton","3":"7762","4":"42"},{"1":"36033","2":"Donald Trump","3":"8221","4":"49"},{"1":"36033","2":"Hillary Clinton","3":"7297","4":"49"},{"1":"36035","2":"Donald Trump","3":"13462","4":"42"},{"1":"36035","2":"Hillary Clinton","3":"6496","4":"42"},{"1":"36037","2":"Donald Trump","3":"16915","4":"53"},{"1":"36037","2":"Hillary Clinton","3":"7650","4":"53"},{"1":"36039","2":"Donald Trump","3":"13073","4":"53"},{"1":"36039","2":"Hillary Clinton","3":"7405","4":"53"},{"1":"36041","2":"Donald Trump","3":"2064","4":"11"},{"1":"36041","2":"Hillary Clinton","3":"949","4":"11"},{"1":"36043","2":"Donald Trump","3":"16699","4":"59"},{"1":"36043","2":"Hillary Clinton","3":"8083","4":"59"},{"1":"36045","2":"Donald Trump","3":"21763","4":"69"},{"1":"36045","2":"Hillary Clinton","3":"13809","4":"69"},{"1":"36047","2":"Donald Trump","3":"141044","4":"1709"},{"1":"36047","2":"Hillary Clinton","3":"640553","4":"1709"},{"1":"36049","2":"Donald Trump","3":"7400","4":"38"},{"1":"36049","2":"Hillary Clinton","3":"3146","4":"38"},{"1":"36051","2":"Donald Trump","3":"17290","4":"40"},{"1":"36051","2":"Hillary Clinton","3":"10697","4":"40"},{"1":"36053","2":"Donald Trump","3":"15936","4":"52"},{"1":"36053","2":"Hillary Clinton","3":"11667","4":"52"},{"1":"36055","2":"Donald Trump","3":"136582","4":"812"},{"1":"36055","2":"Hillary Clinton","3":"188592","4":"812"},{"1":"36057","2":"Donald Trump","3":"11301","4":"42"},{"1":"36057","2":"Hillary Clinton","3":"6595","4":"42"},{"1":"36059","2":"Donald Trump","3":"292025","4":"1202"},{"1":"36059","2":"Hillary Clinton","3":"332154","4":"1202"},{"1":"36061","2":"Donald Trump","3":"64930","4":"1168"},{"1":"36061","2":"Hillary Clinton","3":"579013","4":"1168"},{"1":"36063","2":"Donald Trump","3":"51961","4":"180"},{"1":"36063","2":"Hillary Clinton","3":"35559","4":"180"},{"1":"36065","2":"Donald Trump","3":"51437","4":"192"},{"1":"36065","2":"Hillary Clinton","3":"33743","4":"192"},{"1":"36067","2":"Donald Trump","3":"83649","4":"412"},{"1":"36067","2":"Hillary Clinton","3":"112337","4":"412"},{"1":"36069","2":"Donald Trump","3":"26025","4":"93"},{"1":"36069","2":"Hillary Clinton","3":"22225","4":"93"},{"1":"36071","2":"Donald Trump","3":"76645","4":"321"},{"1":"36071","2":"Hillary Clinton","3":"68278","4":"321"},{"1":"36073","2":"Donald Trump","3":"10936","4":"40"},{"1":"36073","2":"Hillary Clinton","3":"4470","4":"40"},{"1":"36075","2":"Donald Trump","3":"27688","4":"110"},{"1":"36075","2":"Hillary Clinton","3":"17095","4":"110"},{"1":"36077","2":"Donald Trump","3":"13308","4":"49"},{"1":"36077","2":"Hillary Clinton","3":"10451","4":"49"},{"1":"36079","2":"Donald Trump","3":"27024","4":"86"},{"1":"36079","2":"Hillary Clinton","3":"19366","4":"86"},{"1":"36081","2":"Donald Trump","3":"149341","4":"1255"},{"1":"36081","2":"Hillary Clinton","3":"517220","4":"1255"},{"1":"36083","2":"Donald Trump","3":"33726","4":"118"},{"1":"36083","2":"Hillary Clinton","3":"32717","4":"118"},{"1":"36085","2":"Donald Trump","3":"101437","4":"277"},{"1":"36085","2":"Hillary Clinton","3":"74143","4":"277"},{"1":"36087","2":"Donald Trump","3":"60911","4":"277"},{"1":"36087","2":"Hillary Clinton","3":"69342","4":"277"},{"1":"36089","2":"Donald Trump","3":"19942","4":"81"},{"1":"36089","2":"Hillary Clinton","3":"16488","4":"81"},{"1":"36091","2":"Donald Trump","3":"54575","4":"196"},{"1":"36091","2":"Hillary Clinton","3":"50913","4":"196"},{"1":"36093","2":"Donald Trump","3":"28953","4":"102"},{"1":"36093","2":"Hillary Clinton","3":"33747","4":"102"},{"1":"36095","2":"Donald Trump","3":"8831","4":"42"},{"1":"36095","2":"Hillary Clinton","3":"4240","4":"42"},{"1":"36097","2":"Donald Trump","3":"5049","4":"19"},{"1":"36097","2":"Hillary Clinton","3":"3088","4":"19"},{"1":"36099","2":"Donald Trump","3":"7235","4":"27"},{"1":"36099","2":"Hillary Clinton","3":"5698","4":"27"},{"1":"36101","2":"Donald Trump","3":"26831","4":"85"},{"1":"36101","2":"Hillary Clinton","3":"12526","4":"85"},{"1":"36103","2":"Donald Trump","3":"350570","4":"1052"},{"1":"36103","2":"Hillary Clinton","3":"303951","4":"1052"},{"1":"36105","2":"Donald Trump","3":"15931","4":"63"},{"1":"36105","2":"Hillary Clinton","3":"12568","4":"63"},{"1":"36107","2":"Donald Trump","3":"13260","4":"41"},{"1":"36107","2":"Hillary Clinton","3":"7526","4":"41"},{"1":"36109","2":"Donald Trump","3":"10371","4":"64"},{"1":"36109","2":"Hillary Clinton","3":"28890","4":"64"},{"1":"36111","2":"Donald Trump","3":"35239","4":"163"},{"1":"36111","2":"Hillary Clinton","3":"44597","4":"163"},{"1":"36113","2":"Donald Trump","3":"15751","4":"21"},{"1":"36113","2":"Hillary Clinton","3":"13091","4":"21"},{"1":"36115","2":"Donald Trump","3":"13610","4":"49"},{"1":"36115","2":"Hillary Clinton","3":"9098","4":"49"},{"1":"36117","2":"Donald Trump","3":"23380","4":"67"},{"1":"36117","2":"Hillary Clinton","3":"13473","4":"67"},{"1":"36119","2":"Donald Trump","3":"131238","4":"949"},{"1":"36119","2":"Hillary Clinton","3":"272926","4":"949"},{"1":"36121","2":"Donald Trump","3":"12442","4":"40"},{"1":"36121","2":"Hillary Clinton","3":"3904","4":"40"},{"1":"36122","2":"Donald Trump","3":"5660","4":"18"},{"1":"36122","2":"Hillary Clinton","3":"3659","4":"18"}],"options":{"columns":{"min":{},"max":[10]},"rows":{"min":[10],"max":[10]},"pages":{}}}
   </script>
 </div>
-<p>Consider county 36027 where Hillary Clinton won by 474 votes. If we flip the votes on just 1 machine, say City of Beacon W 1 ED 1, Trump would have been declared the winner in that county. Let’s simulate what happens in this county.</p>
+<p>Consider county 36027 (Duchess County) where Hillary Clinton won by 474 votes. If we flip the votes on just 1 “machine”, say City of Beacon W 1 ED 1, Trump would have been declared the winner in that county. Let’s simulate what happens in this county.</p>
 <pre class="r"><code>county_36027 &lt;- data %&gt;% 
   filter(county_fips == 36027) %&gt;%
   spread(candidate, votes)
@@ -1873,7 +1875,7 @@ for(i in 1:1000){
 error/1000</code></pre>
 <pre><code>## [1] 0.975</code></pre>
 <p>As expected, since error is concentrated to one machine, this auditing procedure incorrectly blesses the election outcome about 97% of the time.</p>
-<p>Let’s consider another scenario where for the first 15 machines we give 5% of Hillary Clinton’s votes to Trump which results in Trump being incorrectly declared the winner in this county. In this scenario, the audit does <em>not</em> catch the error about 60% of the time.</p>
+<p>Let’s consider another scenario where for the first 15 machines we give 5% of Hillary Clinton’s votes to Trump which results in Trump being incorrectly declared the winner in this county. In this scenario, the audit fails to catch the error about 60% of the time.</p>
 <pre class="r"><code># True counts from county 36027
 true_counts &lt;- as.matrix(county_36027[, 3:4])
 # Reported counts are true counts with the first 15 machines giving 5% of hillary's votes to trump
@@ -1897,6 +1899,48 @@ for(i in 1:1000){
 # Proportion of errors in the audit
 error/1000</code></pre>
 <pre><code>## [1] 0.608</code></pre>
+<pre class="r"><code>R.Version()</code></pre>
+<pre><code>## $platform
+## [1] &quot;x86_64-apple-darwin15.6.0&quot;
+## 
+## $arch
+## [1] &quot;x86_64&quot;
+## 
+## $os
+## [1] &quot;darwin15.6.0&quot;
+## 
+## $system
+## [1] &quot;x86_64, darwin15.6.0&quot;
+## 
+## $status
+## [1] &quot;&quot;
+## 
+## $major
+## [1] &quot;3&quot;
+## 
+## $minor
+## [1] &quot;5.3&quot;
+## 
+## $year
+## [1] &quot;2019&quot;
+## 
+## $month
+## [1] &quot;03&quot;
+## 
+## $day
+## [1] &quot;11&quot;
+## 
+## $`svn rev`
+## [1] &quot;76217&quot;
+## 
+## $language
+## [1] &quot;R&quot;
+## 
+## $version.string
+## [1] &quot;R version 3.5.3 (2019-03-11)&quot;
+## 
+## $nickname
+## [1] &quot;Great Truth&quot;</code></pre>
 </div>
 
 

@@ -1,7 +1,7 @@
 ---
 title: "New York Audit Algorithm Analysis"
 author: "Jacob Spertus and Amanda Glazer"
-date: "10/15/2019"
+date: "Initialized: 10/15/2019; Updated: 11/6/2019"
 output:
   html_document:
     df_print: paged
@@ -175,6 +175,9 @@ audit_results <- function(true_counts, reported_counts, machine_types){
 }
 ```
 
+
+# Unit Test
+
 First we run a very simple unit test of the function by feeding it an election that should definitely be confirmed (the reported and true results are exactly the same), and one that should definitely be flagged as wrong (there are 1% discrepancies on every machine).
 
 ```{r test function}
@@ -199,7 +202,7 @@ ifelse(result_wrong == "Proceed to full hand count" & result_right == "Audit don
 
 # Simulations 
 
-For our simulations we consider NY precinct level data from the 2016 presidential election. Since we are not able to acquire machine level data, we will work at the precinct level instead, sampling precincts instead of machines and conducting the audits as though precincts are machines. 
+For our simulations we consider NY precinct level data from the 2016 presidential election. For simplicity we make the election into a two contestant election by only considering Hillary Clinton and Donald Trump as candidates. Since we are not able to acquire machine level data, we will work at the precinct level instead, sampling precincts instead of machines and conducting the audits as though precincts are machines. 
 
 ```{r load data}
 # Load NY 2016 Presidential Election Data
@@ -219,7 +222,9 @@ county_tally <- data %>%
   summarise(num_votes = sum(votes), num_precincts = length(unique(precinct)))
 county_tally
 ```
-Consider county 36027 where Hillary Clinton won by 474 votes. If we flip the votes on just 1 machine, say City of Beacon W 1 ED 1, Trump would have been declared the winner in that county. Let's simulate what happens in this county.
+
+Consider county 36027 (Duchess County) where Hillary Clinton won by 474 votes. If we flip the votes on just 1 "machine", say City of Beacon W 1 ED 1, Trump would have been declared the winner in that county. Let's simulate what happens in this county.
+
 ```{r one machine simulation}
 county_36027 <- data %>% 
   filter(county_fips == 36027) %>%
@@ -242,7 +247,7 @@ error/1000
 ```
 As expected, since error is concentrated to one machine, this auditing procedure incorrectly blesses the election outcome about 97% of the time. 
 
-Let's consider another scenario where for the first 15 machines we give 5% of Hillary Clinton's votes to Trump which results in Trump being incorrectly declared the winner in this county. In this scenario, the audit does *not* catch the error about 60% of the time.
+Let's consider another scenario where for the first 15 machines we give 5% of Hillary Clinton's votes to Trump which results in Trump being incorrectly declared the winner in this county. In this scenario, the audit fails to catch the error about 60% of the time.
 
 ```{r 5% vote}
 # True counts from county 36027
@@ -266,4 +271,9 @@ for(i in 1:1000){
 # Proportion of errors in the audit
 error/1000
 ```
+
+```{r version info}
+R.Version()
+```
+
 
