@@ -223,7 +223,7 @@ county_tally <- data %>%
 county_tally
 ```
 
-Consider county 36027 (Duchess County) where Hillary Clinton won by 474 votes. If we flip the votes on just 1 "machine", say City of Beacon W 1 ED 1, Trump would have been declared the winner in that county. Let's simulate what happens in this county.
+Consider county 36027 (Dutchess County) where Hillary Clinton won by 474 votes. If we flip the votes on just 1 "machine", say City of Beacon W 1 ED 1, Trump would have been declared the winner in that county. Let's simulate what happens in this county.
 
 ```{r one machine simulation}
 county_36027 <- data %>% 
