@@ -132,16 +132,16 @@ audit_results <- function(true_counts, reported_counts, machine_types){
       proportion_different_negative <- abs((combined_negative_discrepancies) / combined_handcount_totals)
       
       if(max(c(proportion_different_positive, proportion_different_negative), na.rm = T) > .001 | max(third_sample$prop_machine_discrepancy) > 0.10){
-        return("Proceed to full hand count")
+        list(result = "Proceed to full hand count", workload = sum(combined_handcount_totals))
       } else {
-        return("Audit done; results confirmed")
+        list(result = "Audit done; results confirmed", workload = sum(combined_handcount_totals))
       }
     } else {
-      return("Audit done; results confirmed")
+      list(result = "Audit done; results confirmed", workload = sum(combined_handcount_totals))
     }
     
   } else {
-    return("Audit done; results confirmed")
+    list(result = "Audit done; results confirmed", workload = sum(initial_handcount_totals))
   }
 }
 
@@ -176,11 +176,11 @@ bravo_audit <- function(true_counts, reported_counts, machine_types, alpha = .05
       
       if(test_stat > (1 / alpha)){
         continue <- FALSE
-        print("Reported outcome is correct")
+        list(result = "Audit done; results confirmed", workload = m)
       } 
       if(m == M){
         continue <- FALSE
-        print("All ballots have been counted; result overturned")
+        list(result = "Full handcount conducted; results overturned", workload = m)
       }
     }
 }
