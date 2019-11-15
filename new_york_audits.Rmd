@@ -115,21 +115,15 @@ reported_counts[1, 1] <- true_counts[1, 2]
 reported_counts[1, 2] <- true_counts[1, 1]
 # Audit results 1000 times and count the number of times it incorrectly confirms the results
 ny_error <- 0
-rla_error <- 0
 n_sims <- 1000
 for(i in 1:n_sims){
   ny_audit <- audit_results(true_counts = true_counts, reported_counts = reported_counts, machine_types = rep(1, nrow(true_counts)))
-  rla <- bravo_audit(true_counts = true_counts, reported_counts = reported_counts)
   if(ny_audit$result == "Audit done; results confirmed"){
     ny_error = ny_error + 1
-  }
-  if(rla$result == "Audit done; results confirmed"){
-    rla_error = rla_error + 1
   }
 }
 # Proportion of errors in the audit
 ny_error/n_sims
-rla_error/n_sims
 ```
 As expected, since error is concentrated to one machine, this auditing procedure incorrectly blesses the election outcome about 97% of the time. 
 
@@ -149,21 +143,15 @@ colSums(reported_counts)
 
 
 ny_error <- 0
-rla_error <- 0
 n_sims <- 1000
 for(i in 1:n_sims){
   ny_audit <- audit_results(true_counts = true_counts, reported_counts = reported_counts, machine_types = rep(1, nrow(true_counts)))
-  rla <- bravo_audit(true_counts = true_counts, reported_counts = reported_counts)
   if(ny_audit$result == "Audit done; results confirmed"){
     ny_error = ny_error + 1
-  }
-  if(rla$result == "Audit done; results confirmed"){
-    rla_error = rla_error + 1
   }
 }
 # Proportion of errors in the audit
 ny_error/n_sims
-rla_error/n_sims
 ```
 
 
