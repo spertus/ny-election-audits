@@ -79,7 +79,9 @@ ifelse(result_wrong == "Proceed to full hand count" & result_right == "Audit don
 
 # Simulations 
 
-For our simulations we consider NY precinct level data from the 2016 presidential election. For simplicity we make the election into a two contestant election by only considering Hillary Clinton and Donald Trump as candidates. Since we are not able to acquire machine level data, we will work at the precinct level instead, sampling precincts instead of machines and conducting the audits as though precincts are machines. 
+For our simulations we consider NY precinct level data from the 2016 presidential election. For simplicity we make the election into a two contestant election by only considering Hillary Clinton and Donald Trump as candidates. Since we are not able to acquire machine level data, we will work at the precinct level instead, sampling precincts instead of machines and conducting the audits as though precincts are machines. We compare the error rate of the NY audit to a BRAVO ballot-polling RLA as described in [Lindeman, Stark, and Yates (2012)](https://www.usenix.org/system/files/conference/evtwote12/evtwote12-final27.pdf). 
+
+
 
 ```{r load data}
 # Load NY 2016 Presidential Election Data
@@ -112,16 +114,22 @@ reported_counts <- true_counts
 reported_counts[1, 1] <- true_counts[1, 2]
 reported_counts[1, 2] <- true_counts[1, 1]
 # Audit results 1000 times and count the number of times it incorrectly confirms the results
-error <- 0
+ny_error <- 0
+rla_error <- 0
 n_sims <- 1000
 for(i in 1:n_sims){
-  audit <- audit_results(true_counts = true_counts, reported_counts = reported_counts, machine_types = rep(1, nrow(true_counts)))
-  if(audit$result == "Audit done; results confirmed"){
-    error = error + 1
+  ny_audit <- audit_results(true_counts = true_counts, reported_counts = reported_counts, machine_types = rep(1, nrow(true_counts)))
+  rla <- bravo_audit(true_counts = true_counts, reported_counts = reported_counts)
+  if(ny_audit$result == "Audit done; results confirmed"){
+    ny_error = ny_error + 1
+  }
+  if(rla$result == "Audit done; results confirmed"){
+    rla_error = rla_error + 1
   }
 }
 # Proportion of errors in the audit
-error/1000
+ny_error/n_sims
+rla_error/n_sims
 ```
 As expected, since error is concentrated to one machine, this auditing procedure incorrectly blesses the election outcome about 97% of the time. 
 
@@ -138,23 +146,26 @@ for(i in 1:15){
 }
 # Check that reported counts now declare Trump winner
 colSums(reported_counts)
-# Audit results 1000 times and count the number of times it incorrectly confirms the results
-error = 0
+
+
+ny_error <- 0
+rla_error <- 0
 n_sims <- 1000
 for(i in 1:n_sims){
-  audit <- audit_results(true_counts = true_counts, reported_counts = reported_counts, machine_types = rep(1, nrow(true_counts)))
-  if(audit$result == "Audit done; results confirmed"){
-    error = error + 1
+  ny_audit <- audit_results(true_counts = true_counts, reported_counts = reported_counts, machine_types = rep(1, nrow(true_counts)))
+  rla <- bravo_audit(true_counts = true_counts, reported_counts = reported_counts)
+  if(ny_audit$result == "Audit done; results confirmed"){
+    ny_error = ny_error + 1
+  }
+  if(rla$result == "Audit done; results confirmed"){
+    rla_error = rla_error + 1
   }
 }
 # Proportion of errors in the audit
-error/1000
+ny_error/n_sims
+rla_error/n_sims
 ```
 
-
-# BRAVO Risk-Limiting Audit
-
-In the same simulation scenarios as above, we implement a BRAVO ballot-polling RLA as described in [Lindeman, Stark, and Yates (2012)](https://www.usenix.org/system/files/conference/evtwote12/evtwote12-final27.pdf). 
 
 
 # Workload simulations: BRAVO versus NY Audit
