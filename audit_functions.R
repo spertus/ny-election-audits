@@ -176,11 +176,11 @@ bravo_audit <- function(true_counts, reported_counts, machine_types, alpha = .05
       
       if(test_stat > (1 / alpha)){
         continue <- FALSE
-        list(result = "Audit done; results confirmed", workload = m)
+        return(list(result = "Audit done; results confirmed", workload = m))
       } 
       if(m == M){
         continue <- FALSE
-        list(result = "Full handcount conducted; results overturned", workload = m)
+        return(list(result = "Full handcount conducted; results overturned", workload = m))
       }
     }
 }
