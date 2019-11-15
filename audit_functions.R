@@ -151,12 +151,14 @@ audit_results <- function(true_counts, reported_counts, machine_types){
 #bravo audit following Lindeman, Stark, and Yates (2012), available at: https://www.usenix.org/system/files/conference/evtwote12/evtwote12-final27.pdf
 #currently only works for a two candidate election
 #draws are with replacement
-bravo_audit <- function(true_counts, reported_counts, machine_types, alpha = .05){
+bravo_audit <- function(true_counts, reported_counts, machine_types, alpha = .05, M = sum(true_counts)){
     total_true_counts <- colSums(true_counts)
     total_reported_counts <- colSums(reported_counts)
     reported_winner <- which.max(total_reported_counts)
     #proportion of votes for winner
     s_w <- max(total_reported_counts) / sum(reported_counts)
+    #total votes cast
+    M <- sum(total_true_counts)
     
     #1 is a vote for the winner, 0 is a vote for the loser
     true_ballots <- c(rep(1, total_true_counts[reported_winner]), rep(0, total_true_counts[-reported_winner]))
@@ -164,5 +166,22 @@ bravo_audit <- function(true_counts, reported_counts, machine_types, alpha = .05
     test_stat <- 1
     m <- 0
     
+    continue <- TRUE
+    while(continue){
+      selection <- sample(1:length(true_ballots), size = 1)
+      random_ballot <- true_ballots[selection]
+      #multiply test statistic by s_w / .5 if ballot is for the winner, if for loser multiply by (1-s_w)/.5
+      test_stat <- test_stat * (s_w / 0.5)^(random_ballot) * ((1 - s_w) / 0.5)^(1 - random_ballot)
+      m <- m + 1
+      
+      if(test_stat > (1 / alpha)){
+        continue <- FALSE
+        print("Reported outcome is correct")
+      } 
+      if(m == M){
+        continue <- FALSE
+        print("All ballots have been counted; result overturned")
+      }
+    }
 }
 
