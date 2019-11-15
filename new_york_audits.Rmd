@@ -68,10 +68,10 @@ test_reported_counts <- test_true_counts + discrepancy_matrix
 test_machine_types <- c(rep("DRE", 25), rep("OS", 25))
 
 #the above should lead to a full hand count
-result_wrong <- audit_results(true_counts = test_true_counts, reported_counts = test_reported_counts, machine_types = test_machine_types)
+result_wrong <- audit_results(true_counts = test_true_counts, reported_counts = test_reported_counts, machine_types = test_machine_types)$result
 
 #the below should be confirmed as true and reported counts are exactly the same
-result_right <- audit_results(true_counts = test_true_counts, reported_counts = test_true_counts, machine_types = test_machine_types)
+result_right <- audit_results(true_counts = test_true_counts, reported_counts = test_true_counts, machine_types = test_machine_types)$result
 
 ifelse(result_wrong == "Proceed to full hand count" & result_right == "Audit done; results confirmed", "Works for both correct and discrepant elections", "Something is wrong.")
 ```
@@ -113,9 +113,10 @@ reported_counts[1, 1] <- true_counts[1, 2]
 reported_counts[1, 2] <- true_counts[1, 1]
 # Audit results 1000 times and count the number of times it incorrectly confirms the results
 error <- 0
-for(i in 1:1000){
+n_sims <- 1000
+for(i in 1:n_sims){
   audit <- audit_results(true_counts = true_counts, reported_counts = reported_counts, machine_types = rep(1, nrow(true_counts)))
-  if(audit == "Audit done; results confirmed"){
+  if(audit$result == "Audit done; results confirmed"){
     error = error + 1
   }
 }
@@ -139,9 +140,10 @@ for(i in 1:15){
 colSums(reported_counts)
 # Audit results 1000 times and count the number of times it incorrectly confirms the results
 error = 0
-for(i in 1:1000){
+n_sims <- 1000
+for(i in 1:n_sims){
   audit <- audit_results(true_counts = true_counts, reported_counts = reported_counts, machine_types = rep(1, nrow(true_counts)))
-  if(audit == "Audit done; results confirmed"){
+  if(audit$result == "Audit done; results confirmed"){
     error = error + 1
   }
 }
@@ -149,6 +151,15 @@ for(i in 1:1000){
 error/1000
 ```
 
+
+# BRAVO Risk-Limiting Audit
+
+In the same simulation scenarios as above, we implement a BRAVO ballot-polling RLA as described in [Lindeman, Stark, and Yates (2012)](https://www.usenix.org/system/files/conference/evtwote12/evtwote12-final27.pdf). 
+
+
+# Workload simulations: BRAVO versus NY Audit
+
+# Version Info
 ```{r version info}
 R.Version()
 ```
