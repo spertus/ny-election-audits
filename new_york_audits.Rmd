@@ -158,6 +158,40 @@ ny_error/n_sims
 
 # Workload simulations: BRAVO versus NY Audit
 
+If the reported outcome is correct an RLA will confirm it. A correctly reported outcome can never be overturned by the audit. Within a single county, the New York audit can also only confirm a correct outcome (across counties it is possible that the NY audit overturns a correctly declared outcome). In this setting we are interested in how quickly the audit can stop, i.e. its efficiency, because this means that we can expect a lower workload and thus a less expensive auditing process on average. 
+
+```{r workload}
+# True counts from county 36027
+true_counts <- as.matrix(county_36027[, 3:4])
+# Reported counts are equal to true counts
+reported_counts <- true_counts
+colSums(reported_counts)
+#the margin is very small, we expect a large sample size to confirm the election
+n_sims <- 1000
+ny_workload <- rep(0, n_sims)
+rla_workload <- rep(0, n_sims)
+for(i in 1:n_sims){
+  ny_audit <- audit_results(true_counts = true_counts, reported_counts = reported_counts, machine_types = rep(1, nrow(true_counts)))
+  rla <- bravo_audit(true_counts = true_counts, reported_counts = reported_counts, alpha = .05)
+  ny_workload[i] <- ny_audit$workload
+  rla_workload[i] <- rla$workload
+}
+# Proportion of errors in the audit
+
+#average workload
+mean(ny_workload)
+mean(rla_workload)
+
+#upper 95% quantile of workload
+quantile(ny_workload, prob = .95)
+quantile(rla_workload, prob = .95)
+
+#histograms of workload
+hist(ny_workload, breaks = 30)
+hist(rla_workload, breaks = 30)
+```
+
+
 # Version Info
 ```{r version info}
 R.Version()
