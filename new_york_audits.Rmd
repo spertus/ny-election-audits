@@ -191,6 +191,41 @@ hist(ny_workload, breaks = 30)
 hist(rla_workload, breaks = 30)
 ```
 
+The margin in this election is only `r 100*round(unname((colSums(reported_counts)[1] - colSums(reported_counts)[2])  / sum(reported_counts)), 4)`%. RLAs are far more efficient when the true margin is larger. We also look at county 36011 (Cayuga County), which had a relatively large margin of 12%, with 17384 votes for Trump and 13522 votes for Clinton. 
+
+```{r workload large margin}
+county_36011 <- data %>% 
+  filter(county_fips == 36011) %>%
+  spread(candidate, votes)
+# True counts from county 36011
+true_counts <- as.matrix(county_36011[, 3:4])
+# Reported counts are equal to true counts
+reported_counts <- true_counts
+colSums(reported_counts)
+#the margin is very small, we expect a large sample size to confirm the election
+n_sims <- 1000
+ny_workload <- rep(0, n_sims)
+rla_workload <- rep(0, n_sims)
+for(i in 1:n_sims){
+  ny_audit <- audit_results(true_counts = true_counts, reported_counts = reported_counts, machine_types = rep(1, nrow(true_counts)))
+  rla <- bravo_audit(true_counts = true_counts, reported_counts = reported_counts, alpha = .05)
+  ny_workload[i] <- ny_audit$workload
+  rla_workload[i] <- rla$workload
+}
+# Proportion of errors in the audit
+
+#average workload
+mean(ny_workload)
+mean(rla_workload)
+
+#upper 95% quantile of workload
+quantile(ny_workload, prob = .95)
+quantile(rla_workload, prob = .95)
+
+#histograms of workload
+hist(ny_workload, breaks = 30)
+hist(rla_workload, breaks = 30)
+```
 
 # Version Info
 ```{r version info}
